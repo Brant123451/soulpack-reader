@@ -1,0 +1,29 @@
+{
+  "id": "soulpack-reader",
+  "name": "Soul Pack Reader",
+  "description": "Load character persona packs (Soul Packs) with portable memory. Injects persona into system prompt and persists soul memories across sessions.",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "packPath": {
+        "type": "string",
+        "description": "Absolute path to a .soulpack.json file to auto-load on startup"
+      },
+      "stateDir": {
+        "type": "string",
+        "description": "Directory to store soul state files. Defaults to ~/.openclaw/soulpack-data/"
+      }
+    }
+  },
+  "uiHints": {
+    "packPath": {
+      "label": "Default Soul Pack Path",
+      "placeholder": "/path/to/character.soulpack.json"
+    },
+    "stateDir": {
+      "label": "State Storage Directory",
+      "placeholder": "~/.openclaw/soulpack-data",
+      "advanced": true
+    }
+  }
+}

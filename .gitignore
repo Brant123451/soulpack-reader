@@ -1,0 +1,7 @@
+node_modules/
+dist/
+*.state.json
+soulpack-states/
+.DS_Store
+Thumbs.db
+*.log

@@ -1,0 +1,25 @@
+{
+  "name": "soulpack-reader",
+  "version": "0.1.0",
+  "description": "Soul Pack Reader — Load character persona packs with portable memory for OpenClaw agents",
+  "type": "module",
+  "main": "src/index.ts",
+  "openclaw": {
+    "extensions": [
+      "./src/index.ts"
+    ]
+  },
+  "devDependencies": {
+    "openclaw": "workspace:*"
+  },
+  "keywords": [
+    "openclaw",
+    "plugin",
+    "character-card",
+    "persona",
+    "soul-pack",
+    "memory"
+  ],
+  "author": "",
+  "license": "MIT"
+}
