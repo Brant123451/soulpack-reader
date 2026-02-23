@@ -29,7 +29,10 @@ import {
   selectPackTool,
   exportStateTool,
   importStateTool,
+  installPackTool,
+  listPacksTool,
 } from "./tools.js";
+import { createRouteHandlers } from "./http-routes.js";
 import type { SoulPack } from "./types.js";
 
 // ─── 状态存储目录 ─────────────────────────────────────────
@@ -130,6 +133,17 @@ const soulpackPlugin = {
     api.registerTool(selectPackTool as any, { name: "soulpack_select" });
     api.registerTool(exportStateTool as any, { name: "soulpack_export_state" });
     api.registerTool(importStateTool as any, { name: "soulpack_import_state" });
+    api.registerTool(installPackTool as any, { name: "soulpack_install" });
+    api.registerTool(listPacksTool as any, { name: "soulpack_list" });
+
+    // ─── HTTP Routes（供网站一键安装）────────────────────
+    const routes = createRouteHandlers(stateDir);
+    api.registerHttpRoute({ path: "/import", handler: routes.import });
+    api.registerHttpRoute({ path: "/list", handler: routes.list });
+    api.registerHttpRoute({ path: "/activate", handler: routes.activate });
+    api.registerHttpRoute({ path: "/ping", handler: routes.ping });
+    api.registerHttpRoute({ path: "/remove", handler: routes.remove });
+    api.logger.info("Soul Pack HTTP routes registered: /import, /list, /activate, /ping, /remove");
   },
 };
 
