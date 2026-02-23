@@ -85,6 +85,7 @@ export class MemoryEngine {
   record(userInput: string, aiOutput: string, sessionId?: string): {
     memoriesAdded: number;
     totalMemories: number;
+    transcriptPath: string | null;
   } {
     const now = new Date().toISOString();
     const sid = sessionId || this.sessionId || `session_${Date.now()}`;
@@ -94,10 +95,17 @@ export class MemoryEngine {
     }
 
     // 缓冲消息
-    this.buffer.push(
+    const pair: ConversationMessage[] = [
       { role: "user", content: userInput, timestamp: now },
       { role: "assistant", content: aiOutput, timestamp: now },
-    );
+    ];
+    this.buffer.push(...pair);
+
+    // 立即持久化原始对话（每轮都写盘，不依赖 endSession）
+    let transcriptPath: string | null = null;
+    if (this.saveTranscripts) {
+      transcriptPath = this.appendTranscript(sid, pair);
+    }
 
     // 加载状态
     const state = this.loadState();
@@ -119,6 +127,7 @@ export class MemoryEngine {
     return {
       memoriesAdded: added,
       totalMemories: state.memories.length,
+      transcriptPath,
     };
   }
 
@@ -183,24 +192,23 @@ export class MemoryEngine {
   }
 
   endSession(): {
-    memoriesAdded: number;
     transcriptPath: string | null;
   } {
+    // record() 已在每轮调用时增量写盘，这里只做清理
     let transcriptPath: string | null = null;
 
-    // 保存对话记录
     if (this.saveTranscripts && this.buffer.length > 0) {
-      transcriptPath = this.writeTranscript(this.sessionId, this.buffer);
+      // 返回当前 session 的 transcript 文件路径
+      const safeSid = (this.sessionId || `s_${Date.now()}`).replace(/[^a-zA-Z0-9_-]/g, "_");
+      transcriptPath = path.join(this.getTranscriptsDir(), `${safeSid}.json`);
       this.enforceTranscriptLimit();
     }
-
-    const result = { memoriesAdded: 0, transcriptPath };
 
     // 重置
     this.buffer = [];
     this.sessionId = "";
     this.sessionStartedAt = "";
-    return result;
+    return { transcriptPath };
   }
 
   // ─── 记忆查询 ───────────────────────────────────────────
@@ -456,12 +464,62 @@ export class MemoryEngine {
 
   // ─── 内部方法：Transcript ───────────────────────────────
 
+  /**
+   * 增量追加对话到 transcript 文件（每轮 record() 调用一次）
+   * 如果文件已存在则读取并追加；否则新建。
+   * 保证每一轮对话都立即写盘，不丢数据。
+   */
+  private appendTranscript(sessionId: string, newMessages: ConversationMessage[]): string {
+    const dir = this.getTranscriptsDir();
+    this.ensureDir(dir);
+    const safeSid = (sessionId || `s_${Date.now()}`).replace(/[^a-zA-Z0-9_-]/g, "_");
+    const filePath = path.join(dir, `${safeSid}.json`);
+
+    let transcript: {
+      packId: string;
+      sessionId: string;
+      startedAt: string;
+      endedAt: string;
+      messageCount: number;
+      messages: ConversationMessage[];
+    };
+
+    // 读取已有 transcript 或新建
+    if (fs.existsSync(filePath)) {
+      try {
+        transcript = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+        transcript.messages.push(...newMessages);
+      } catch {
+        transcript = this.createTranscriptObject(sessionId, newMessages);
+      }
+    } else {
+      transcript = this.createTranscriptObject(sessionId, newMessages);
+    }
+
+    transcript.endedAt = newMessages[newMessages.length - 1]?.timestamp || new Date().toISOString();
+    transcript.messageCount = transcript.messages.length;
+
+    fs.writeFileSync(filePath, JSON.stringify(transcript, null, 2), "utf-8");
+    return filePath;
+  }
+
+  /**
+   * 全量写入 transcript（用于 recordBatch）
+   */
   private writeTranscript(sessionId: string, messages: ConversationMessage[]): string {
     const dir = this.getTranscriptsDir();
     this.ensureDir(dir);
     const safeSid = (sessionId || `s_${Date.now()}`).replace(/[^a-zA-Z0-9_-]/g, "_");
     const filePath = path.join(dir, `${safeSid}.json`);
-    const transcript = {
+    fs.writeFileSync(filePath, JSON.stringify(
+      this.createTranscriptObject(sessionId, messages),
+      null, 2,
+    ), "utf-8");
+    return filePath;
+  }
+
+  private createTranscriptObject(sessionId: string, messages: ConversationMessage[]) {
+    return {
       packId: this.packId,
       sessionId,
       startedAt: messages[0]?.timestamp || new Date().toISOString(),
@@ -469,8 +527,6 @@ export class MemoryEngine {
       messageCount: messages.length,
       messages,
     };
-    fs.writeFileSync(filePath, JSON.stringify(transcript, null, 2), "utf-8");
-    return filePath;
   }
 
   private countTranscripts(): number {
