@@ -1,7 +1,8 @@
 {
   "id": "soulpack-reader",
   "name": "Soul Pack Reader",
-  "description": "Load character persona packs (Soul Packs) with portable memory. Injects persona into system prompt and persists soul memories across sessions.",
+  "version": "0.2.0",
+  "description": "Load character persona packs (Soul Packs) with portable memory. MemoryEngine records conversations independently of the AI host.",
   "configSchema": {
     "type": "object",
     "properties": {
@@ -12,6 +13,14 @@
       "stateDir": {
         "type": "string",
         "description": "Directory to store soul state files. Defaults to ~/.openclaw/soulpack-data/"
+      },
+      "maxMemories": {
+        "type": "number",
+        "description": "Maximum number of memory entries to keep. Older entries are automatically truncated. Default: 200"
+      },
+      "maxTranscripts": {
+        "type": "number",
+        "description": "Maximum number of transcript files per pack. Oldest are deleted. Default: 50"
       }
     }
   },
@@ -23,6 +32,16 @@
     "stateDir": {
       "label": "State Storage Directory",
       "placeholder": "~/.openclaw/soulpack-data",
+      "advanced": true
+    },
+    "maxMemories": {
+      "label": "Memory Limit",
+      "placeholder": "200",
+      "advanced": true
+    },
+    "maxTranscripts": {
+      "label": "Transcript File Limit",
+      "placeholder": "50",
       "advanced": true
     }
   }

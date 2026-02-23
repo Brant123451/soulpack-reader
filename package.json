@@ -1,6 +1,6 @@
 {
   "name": "soulpack-reader",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Soul Pack Reader — Load character persona packs with portable memory for OpenClaw agents",
   "type": "module",
   "main": "src/index.ts",

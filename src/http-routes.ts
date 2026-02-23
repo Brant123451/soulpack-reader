@@ -7,11 +7,16 @@
  *   POST /activate  — 切换当前激活的 pack
  *   GET  /ping      — 健康检查（供网站检测 OpenClaw 是否在线）
  *   POST /remove    — 删除已安装的 pack
+ *   POST /record    — 外部系统推送对话记录（核心：独立于AI宿主的记忆采集）
+ *   GET  /memory/status  — 记忆状态概览
+ *   GET  /memory/search  — 搜索记忆
+ *   GET  /version-check  — 检查 GitHub 版本更新
  */
 
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { listPacks, importPackFromJson, loadPack, deletePack } from "./pack-store.js";
 import { setCurrentPack, getCurrentPack } from "./tools.js";
+import { MemoryEngine } from "./memory-engine.js";
 
 // ─── 工具函数 ─────────────────────────────────────────────
 
@@ -49,7 +54,7 @@ type RouteHandler = (req: IncomingMessage, res: ServerResponse) => Promise<void>
 
 // ─── 路由工厂 ─────────────────────────────────────────────
 
-export function createRouteHandlers(stateDir: string) {
+export function createRouteHandlers(stateDir: string, getEngine?: () => MemoryEngine | null) {
 
   // POST /import — 接收并保存 pack
   const handleImport: RouteHandler = async (req, res) => {
@@ -180,11 +185,127 @@ export function createRouteHandlers(stateDir: string) {
     }
   };
 
+  // POST /record — 外部系统推送对话记录（核心记忆采集端点）
+  const handleRecord: RouteHandler = async (req, res) => {
+    if (req.method === "OPTIONS") { setCorsHeaders(res); res.writeHead(204); res.end(); return; }
+    try {
+      const engine = getEngine?.();
+      if (!engine) {
+        sendJson(res, 503, { error: "No Soul Pack is active. Load a pack first." });
+        return;
+      }
+
+      const body = await parseJsonBody(req) as Record<string, unknown> | null;
+      if (!body) {
+        sendJson(res, 400, { error: "Request body required" });
+        return;
+      }
+
+      // 支持两种格式：
+      // 1. 单轮: { userInput, aiOutput, sessionId? }
+      // 2. 批量: { messages: [{role, content}], sessionId? }
+      const sessionId = typeof body.sessionId === "string" ? body.sessionId : undefined;
+
+      if (typeof body.userInput === "string" && typeof body.aiOutput === "string") {
+        const result = engine.record(body.userInput, body.aiOutput, sessionId);
+        sendJson(res, 200, {
+          success: true,
+          ...result,
+          message: `Recorded 1 exchange, ${result.memoriesAdded} memories extracted.`,
+        });
+        return;
+      }
+
+      if (Array.isArray(body.messages)) {
+        const messages = (body.messages as Array<Record<string, unknown>>)
+          .filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
+          .map((m) => ({
+            role: m.role as "user" | "assistant",
+            content: m.content as string,
+            timestamp: typeof m.timestamp === "string" ? m.timestamp : new Date().toISOString(),
+          }));
+
+        if (messages.length === 0) {
+          sendJson(res, 400, { error: "No valid messages found in batch" });
+          return;
+        }
+
+        const result = engine.recordBatch(messages, sessionId);
+        sendJson(res, 200, {
+          success: true,
+          ...result,
+          message: `Recorded ${messages.length} messages, ${result.memoriesAdded} memories extracted.`,
+        });
+        return;
+      }
+
+      sendJson(res, 400, {
+        error: "Invalid format. Use { userInput, aiOutput } for single exchange, or { messages: [{role, content}] } for batch.",
+      });
+    } catch (err) {
+      sendJson(res, 500, { error: String(err) });
+    }
+  };
+
+  // GET /memory/status — 记忆状态概览
+  const handleMemoryStatus: RouteHandler = (_req, res) => {
+    if (_req.method === "OPTIONS") { setCorsHeaders(res); res.writeHead(204); res.end(); return; }
+    const engine = getEngine?.();
+    if (!engine) {
+      sendJson(res, 503, { error: "No Soul Pack is active." });
+      return;
+    }
+    sendJson(res, 200, engine.getStatus());
+  };
+
+  // GET /memory/search?q=xxx&limit=10 — 搜索记忆
+  const handleMemorySearch: RouteHandler = (_req, res) => {
+    if (_req.method === "OPTIONS") { setCorsHeaders(res); res.writeHead(204); res.end(); return; }
+    const engine = getEngine?.();
+    if (!engine) {
+      sendJson(res, 503, { error: "No Soul Pack is active." });
+      return;
+    }
+    const url = new URL(_req.url || "/", "http://localhost");
+    const query = url.searchParams.get("q") || "";
+    const limit = Math.min(Number(url.searchParams.get("limit")) || 10, 50);
+    if (!query) {
+      sendJson(res, 200, { memories: engine.getMemories(limit) });
+      return;
+    }
+    sendJson(res, 200, { memories: engine.searchMemories(query, limit) });
+  };
+
+  // GET /version-check — 检查 GitHub 版本更新
+  const handleVersionCheck: RouteHandler = async (_req, res) => {
+    if (_req.method === "OPTIONS") { setCorsHeaders(res); res.writeHead(204); res.end(); return; }
+    const currentVersion = "0.1.0";
+    const result = await MemoryEngine.checkForUpdate(
+      "https://api.github.com/repos/Brant123451/soulpack-reader/releases/latest",
+      currentVersion,
+    );
+    if (!result) {
+      sendJson(res, 200, { currentVersion, status: "check_failed", message: "Could not reach GitHub." });
+      return;
+    }
+    sendJson(res, 200, {
+      currentVersion,
+      ...result,
+      message: result.hasUpdate
+        ? `Update available: v${result.latestVersion}. Download: ${result.downloadUrl}`
+        : "You are on the latest version.",
+    });
+  };
+
   return {
     import: handleImport,
     list: handleList,
     activate: handleActivate,
     ping: handlePing,
     remove: handleRemove,
+    record: handleRecord,
+    memoryStatus: handleMemoryStatus,
+    memorySearch: handleMemorySearch,
+    versionCheck: handleVersionCheck,
   };
 }
