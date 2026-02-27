@@ -60,6 +60,9 @@ npm install
 
 **Claude Desktop** — 编辑 `~/Library/Application Support/Claude/claude_desktop_config.json`，格式同上。
 
+> MCP Server 启动时会自动在 `127.0.0.1:18790` 开启 HTTP 端口，供网站一键安装使用。无需额外配置。
+> 如需关闭，设置环境变量 `SOULPACK_HTTP_DISABLE=1`。
+
 ### 3. 加载角色
 
 **方式 A：环境变量自动加载**

@@ -28,7 +28,8 @@
  * Env vars:
  *   SOULPACK_STATE_DIR    — Storage directory (default: ~/.soulpack)
  *   SOULPACK_DEFAULT_PACK — Auto-load this pack on startup
- *   SOULPACK_HTTP_PORT    — If set, also start HTTP server for website integration
+ *   SOULPACK_HTTP_PORT    — HTTP server port (default: 18790, set 0 to disable)
+ *   SOULPACK_HTTP_DISABLE — Set to "1" to disable HTTP server
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -465,11 +466,14 @@ server.prompt(
   },
 );
 
-// ─── Optional HTTP Server (for website integration) ──────────
+// ─── HTTP Server (default on, port 18790) ────────────────────
+
+const DEFAULT_HTTP_PORT = 18790;
 
 async function maybeStartHttpServer(): Promise<void> {
-  const port = process.env.SOULPACK_HTTP_PORT;
-  if (!port) return;
+  if (process.env.SOULPACK_HTTP_DISABLE === "1") return;
+  const port = process.env.SOULPACK_HTTP_PORT || String(DEFAULT_HTTP_PORT);
+  if (port === "0") return;
 
   const { createServer } = await import("node:http");
   const { createRouteHandlers } = await import("./http-routes.js");
@@ -504,8 +508,8 @@ async function maybeStartHttpServer(): Promise<void> {
     }
   });
 
-  httpServer.listen(Number(port), () => {
-    process.stderr.write(`[soulpack] HTTP server on port ${port}\n`);
+  httpServer.listen(Number(port), "127.0.0.1", () => {
+    process.stderr.write(`[soulpack] HTTP server on http://127.0.0.1:${port}\n`);
   });
 }
 
