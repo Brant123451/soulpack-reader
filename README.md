@@ -28,15 +28,7 @@
 
 ## 快速开始
 
-### 1. 克隆并安装
-
-```bash
-git clone https://github.com/Brant123451/soulpack-reader.git
-cd soulpack-reader
-npm install
-```
-
-### 2. 连接到 AI 智能体（MCP）
+### 1. 添加 MCP 配置（一步搞定，无需 clone）
 
 在你的 AI 工具中添加 MCP Server 配置：
 
@@ -47,10 +39,7 @@ npm install
   "mcpServers": {
     "soulpack-reader": {
       "command": "npx",
-      "args": ["tsx", "E:/path/to/soulpack-reader/src/index.ts"],
-      "env": {
-        "SOULPACK_DEFAULT_PACK": "E:/path/to/soulpack-reader/examples/luna.soulpack.json"
-      }
+      "args": ["-y", "soulpack-reader"]
     }
   }
 }
@@ -60,10 +49,12 @@ npm install
 
 **Claude Desktop** — 编辑 `~/Library/Application Support/Claude/claude_desktop_config.json`，格式同上。
 
+保存后重启 AI 工具即可。`npx` 会自动下载并运行，不需要手动 clone 或 npm install。
+
 > MCP Server 启动时会自动在 `127.0.0.1:18790` 开启 HTTP 端口，供网站一键安装使用。无需额外配置。
 > 如需关闭，设置环境变量 `SOULPACK_HTTP_DISABLE=1`。
 
-### 3. 加载角色
+### 2. 加载角色
 
 **方式 A：环境变量自动加载**
 

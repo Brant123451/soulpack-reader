@@ -1,14 +1,34 @@
 {
   "name": "soulpack-reader",
   "version": "0.3.0",
-  "description": "Soul Pack Reader — MCP Server + Skill providing character persona materials to any AI agent",
+  "description": "Soul Pack Reader — MCP Server providing character persona, voice, appearance, and memory materials to any AI agent",
   "type": "module",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
+  "bin": {
+    "soulpack-reader": "dist/index.js"
+  },
+  "files": [
+    "dist/",
+    "skills/",
+    "examples/",
+    "SPEC.md",
+    "README.md"
+  ],
   "scripts": {
-    "start": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "start:dev": "tsx src/index.ts",
     "start:http": "tsx src/http-server.ts",
     "build": "tsc",
+    "prepublishOnly": "npm run build",
     "dev": "tsx watch src/index.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Brant123451/soulpack-reader.git"
+  },
+  "homepage": "https://github.com/Brant123451/soulpack-reader#readme",
+  "bugs": {
+    "url": "https://github.com/Brant123451/soulpack-reader/issues"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",
@@ -19,16 +39,22 @@
     "typescript": "^5.7.0",
     "@types/node": "^22.0.0"
   },
+  "engines": {
+    "node": ">=18"
+  },
   "keywords": [
     "mcp",
+    "mcp-server",
     "model-context-protocol",
     "character-card",
     "persona",
     "soul-pack",
     "memory",
     "ai-agent",
-    "skill"
+    "skill",
+    "voice",
+    "avatar"
   ],
-  "author": "",
+  "author": "Brant123451",
   "license": "MIT"
 }

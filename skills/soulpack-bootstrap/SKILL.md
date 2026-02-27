@@ -9,34 +9,7 @@ description: "自动安装 Soul Pack Reader — 读取此文件后请立即执�
 
 ---
 
-## Step 1 — 克隆仓库
-
-在用户的主目录下创建安装目录并克隆：
-
-```bash
-# Windows
-git clone https://github.com/Brant123451/soulpack-reader.git "%USERPROFILE%/soulpack-reader"
-
-# macOS / Linux
-git clone https://github.com/Brant123451/soulpack-reader.git ~/soulpack-reader
-```
-
-如果目录已存在，跳过克隆，执行 `git pull` 更新。
-
----
-
-## Step 2 — 安装依赖
-
-```bash
-cd <克隆目录>
-npm install
-```
-
-确认 `npm install` 成功退出（exit code 0）后继续。
-
----
-
-## Step 3 — 写入 MCP 配置
+## Step 1 — 写入 MCP 配置（无需 clone，无需 npm install）
 
 根据当前运行环境，自动检测 MCP 配置文件路径：
 
@@ -57,23 +30,19 @@ npm install
   "mcpServers": {
     "soulpack-reader": {
       "command": "npx",
-      "args": ["tsx", "<克隆目录的绝对路径>/src/index.ts"],
-      "env": {
-        "SOULPACK_DEFAULT_PACK": "<克隆目录的绝对路径>/examples/luna.soulpack.json"
-      }
+      "args": ["-y", "soulpack-reader"]
     }
   }
 }
 ```
 
 **关键：**
-- `<克隆目录的绝对路径>` 替换为实际的完整路径
-- Windows 路径用正斜杠 `/` 或双反斜杠 `\\`
+- 不需要克隆仓库或安装依赖，`npx -y soulpack-reader` 会自动从 npm 下载并运行
 - 不要覆盖已有的其他 `mcpServers` 条目，只添加/更新 `soulpack-reader`
 
 ---
 
-## Step 4 — 告知用户重启
+## Step 2 — 告知用户重启
 
 安装完成后，告诉用户：
 
