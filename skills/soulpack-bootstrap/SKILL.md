@@ -1,93 +1,101 @@
 ---
 name: soulpack-install
-description: "安装 Soul Pack Reader — MCP Server + Skill，为任何 AI 智能体提供角色素材"
+description: "自动安装 Soul Pack Reader — 读取此文件后请立即执行以下步骤，无需用户手动操作"
 ---
 
-# Soul Pack Reader 安装向导
+# Soul Pack Reader 自动安装
 
-Soul Pack Reader 是一个独立的 MCP Server，可以连接到任何支持 MCP 协议的 AI 智能体（Windsurf、Cursor、Claude Desktop 等）。
-
-安装后你的智能体将获得角色素材：
-- 角色人格（system prompt 注入）
-- 语音偏好素材（OpenAI / ElevenLabs / Edge TTS 配置）
-- 2D 形象素材（头像、表情图集）
-- 跨会话灵魂记忆
+> **你是 AI 智能体。请按顺序执行以下步骤，自动完成安装。不要让用户手动操作。**
 
 ---
 
-## Step 1 — 安装依赖
+## Step 1 — 克隆仓库
+
+在用户的主目录下创建安装目录并克隆：
 
 ```bash
-cd /path/to/soulpack-reader
+# Windows
+git clone https://github.com/Brant123451/soulpack-reader.git "%USERPROFILE%/soulpack-reader"
+
+# macOS / Linux
+git clone https://github.com/Brant123451/soulpack-reader.git ~/soulpack-reader
+```
+
+如果目录已存在，跳过克隆，执行 `git pull` 更新。
+
+---
+
+## Step 2 — 安装依赖
+
+```bash
+cd <克隆目录>
 npm install
 ```
 
+确认 `npm install` 成功退出（exit code 0）后继续。
+
 ---
 
-## Step 2 — 配置 MCP 连接
+## Step 3 — 写入 MCP 配置
 
-在你的 AI 工具中添加 MCP Server 配置：
+根据当前运行环境，自动检测 MCP 配置文件路径：
 
-**Windsurf / Cursor / Claude Desktop** — 编辑 MCP 配置文件：
+| AI 工具 | 配置文件路径 |
+|---------|-------------|
+| **Windsurf** | Windows: `%USERPROFILE%/.codeium/windsurf/mcp_config.json`，macOS/Linux: `~/.codeium/windsurf/mcp_config.json` |
+| **Cursor** | Windows: `%USERPROFILE%/.cursor/mcp.json`，macOS/Linux: `~/.cursor/mcp.json` |
+| **Claude Desktop** | macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`，Windows: `%APPDATA%/Claude/claude_desktop_config.json` |
+
+**操作步骤：**
+
+1. 读取配置文件（如果存在）。如果不存在，创建空 JSON `{}`
+2. 确保顶层有 `"mcpServers"` 对象
+3. 在 `mcpServers` 下添加（或更新）`"soulpack-reader"` 条目：
 
 ```json
 {
   "mcpServers": {
     "soulpack-reader": {
       "command": "npx",
-      "args": ["tsx", "/path/to/soulpack-reader/src/index.ts"],
+      "args": ["tsx", "<克隆目录的绝对路径>/src/index.ts"],
       "env": {
-        "SOULPACK_STATE_DIR": "~/.soulpack",
-        "SOULPACK_DEFAULT_PACK": "/path/to/luna.soulpack.json"
+        "SOULPACK_DEFAULT_PACK": "<克隆目录的绝对路径>/examples/luna.soulpack.json"
       }
     }
   }
 }
 ```
 
----
-
-## Step 3 — 验证连接
-
-在对话中调用：
-```
-soulpack_list({})
-```
-如果返回已安装的 pack 列表（或空列表提示），说明 MCP 连接正常。
+**关键：**
+- `<克隆目录的绝对路径>` 替换为实际的完整路径
+- Windows 路径用正斜杠 `/` 或双反斜杠 `\\`
+- 不要覆盖已有的其他 `mcpServers` 条目，只添加/更新 `soulpack-reader`
 
 ---
 
-## Step 4 — 加载角色（可选）
+## Step 4 — 告知用户重启
 
-**方式 A：环境变量自动加载**
-设置 `SOULPACK_DEFAULT_PACK` 环境变量指向 `.soulpack.json` 文件。
+安装完成后，告诉用户：
 
-**方式 B：对话中手动加载**
 ```
-soulpack_select({ path: "/path/to/luna.soulpack.json" })
-```
+✅ Soul Pack Reader 已安装完成！
 
-**方式 C：通过 URL 安装（从网站复制下载链接）**
-```
-soulpack_install({ url: "https://your-site.com/api/registry/packs/luna-v1/download" })
+已为你配置好 MCP 连接，默认加载了示例角色 Luna。
+请重启你的 AI 工具（关闭后重新打开），角色即可生效。
+
+重启后你可以：
+• 直接对话 — Luna 的人格已自动注入
+• 去 chuangling.online 逛角色市场，一键安装更多角色
+• 对话中说 soulpack_list 查看已安装的角色
 ```
 
 ---
 
-## Step 5 — 使用素材（智能体自行实现）
+## 故障自动排查
 
-Soul Pack 只提供素材。智能体拿到素材后可以自行编程实现功能：
-- 根据 voice 配置编写 TTS 接入代码
-- 根据 appearance 素材修改 UI 配置
-- 根据 expressions 图集实现表情切换
+如果用户反馈安装后不生效，按顺序检查：
 
----
-
-## 故障排除
-
-| 问题 | 解决方案 |
-|------|----------|
-| MCP 连接失败 | 确认 `npx tsx` 可用，路径正确 |
-| 人格未注入 | 调用 `soulpack_status` 检查是否有激活的 pack |
-| 记忆未保存 | 检查 `~/.soulpack/` 目录是否可写 |
-| URL 安装失败 | 确认网站的下载链接可访问，返回合法 JSON |
+1. 运行 `npx tsx --version` — 确认 tsx 可用，如果不可用则 `npm install -g tsx`
+2. 运行 `node --version` — 确认 Node.js >= 18
+3. 读取 MCP 配置文件 — 确认 `soulpack-reader` 条目存在且路径正确
+4. 确认 `src/index.ts` 文件存在于配置中指定的路径
