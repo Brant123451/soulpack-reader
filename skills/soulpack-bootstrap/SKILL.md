@@ -1,123 +1,85 @@
 ---
 name: soulpack-install
-description: "一键安装 Soul Pack Reader 插件 — 让你的 OpenClaw 获得角色人格、语音和 2D 形象能力"
-user-invocable: true
-metadata:
-  { "openclaw": { "requires": {} } }
+description: "安装 Soul Pack Reader — MCP Server + Skill，为任何 AI 智能体提供角色素材"
 ---
 
-# Soul Pack 安装向导
+# Soul Pack Reader 安装向导
 
-按以下步骤安装 Soul Pack Reader 插件。安装完成后，你的 OpenClaw 将支持：
-- 角色人格注入（system prompt）
-- 语音/TTS 身份（OpenAI / ElevenLabs / Edge TTS）
-- 2D 头像与表情系统
-- 跨会话、跨实例的灵魂记忆
+Soul Pack Reader 是一个独立的 MCP Server，可以连接到任何支持 MCP 协议的 AI 智能体（Windsurf、Cursor、Claude Desktop 等）。
 
----
-
-## Step 1 — 检查是否已安装
-
-```bash
-openclaw plugins list
-```
-
-如果输出中看到 `soulpack-reader` 且状态为 `loaded`，直接跳到 Step 4。
+安装后你的智能体将获得角色素材：
+- 角色人格（system prompt 注入）
+- 语音偏好素材（OpenAI / ElevenLabs / Edge TTS 配置）
+- 2D 形象素材（头像、表情图集）
+- 跨会话灵魂记忆
 
 ---
 
-## Step 2 — 安装插件
-
-**从 Git 克隆的本地目录安装（推荐）：**
+## Step 1 — 安装依赖
 
 ```bash
-openclaw plugins install /path/to/soulpack-reader --link
-```
-
-**从 npm 安装（项目发布后可用）：**
-
-```bash
-openclaw plugins install soulpack-reader --pin
+cd /path/to/soulpack-reader
+npm install
 ```
 
 ---
 
-## Step 3 — 启用并重启
+## Step 2 — 配置 MCP 连接
 
-```bash
-openclaw plugins enable soulpack-reader
-```
+在你的 AI 工具中添加 MCP Server 配置：
 
-重启 gateway 使插件生效。
-
----
-
-## Step 4 — 配置角色（可选）
-
-**方式 A：在配置文件中设置默认角色（启动时自动加载）**
-
-编辑 `~/.openclaw/openclaw.json`：
+**Windsurf / Cursor / Claude Desktop** — 编辑 MCP 配置文件：
 
 ```json
 {
-  "plugins": {
-    "entries": {
-      "soulpack-reader": {
-        "enabled": true,
-        "config": {
-          "packPath": "/path/to/luna.soulpack.json"
-        }
+  "mcpServers": {
+    "soulpack-reader": {
+      "command": "npx",
+      "args": ["tsx", "/path/to/soulpack-reader/src/index.ts"],
+      "env": {
+        "SOULPACK_STATE_DIR": "~/.soulpack",
+        "SOULPACK_DEFAULT_PACK": "/path/to/luna.soulpack.json"
       }
     }
   }
 }
 ```
 
-**方式 B：在对话中手动加载**
+---
 
+## Step 3 — 验证连接
+
+在对话中调用：
+```
+soulpack_list({})
+```
+如果返回已安装的 pack 列表（或空列表提示），说明 MCP 连接正常。
+
+---
+
+## Step 4 — 加载角色（可选）
+
+**方式 A：环境变量自动加载**
+设置 `SOULPACK_DEFAULT_PACK` 环境变量指向 `.soulpack.json` 文件。
+
+**方式 B：对话中手动加载**
 ```
 soulpack_select({ path: "/path/to/luna.soulpack.json" })
 ```
 
----
-
-## Step 5 — 启用语音（可选）
-
-如果你的角色包含 `voice` 配置，在 `openclaw.json` 中启用 TTS：
-
-```json
-{
-  "messages": {
-    "tts": {
-      "auto": "always",
-      "provider": "edge",
-      "edge": { "enabled": true }
-    }
-  }
-}
+**方式 C：通过 URL 安装（从网站复制下载链接）**
 ```
-
-角色的语音偏好（provider/voiceId/language）会通过 Soul Pack 的 `voice` 字段自动传达给模型。
+soulpack_install({ url: "https://your-site.com/api/registry/packs/luna-v1/download" })
+```
 
 ---
 
-## Step 6 — 设置头像（可选）
+## Step 5 — 使用素材（智能体自行实现）
 
-将角色头像写入 agent identity：
-
-```json
-{
-  "agents": {
-    "defaults": {
-      "identity": {
-        "name": "Luna",
-        "emoji": "🌙",
-        "avatar": "https://example.com/avatar.png"
-      }
-    }
-  }
-}
-```
+Soul Pack 只提供素材。智能体拿到素材后可以自行编程实现功能：
+- 根据 voice 配置编写 TTS 接入代码
+- 根据 appearance 素材修改 UI 配置
+- 根据 expressions 图集实现表情切换
 
 ---
 
@@ -125,22 +87,7 @@ soulpack_select({ path: "/path/to/luna.soulpack.json" })
 
 | 问题 | 解决方案 |
 |------|----------|
-| 插件未找到 | 确认目录包含 `package.json` 和 `openclaw.plugin.json` |
-| 插件报错 | 运行 `openclaw plugins info soulpack-reader` 查看详情 |
-| 人格未注入 | 确认已通过配置或 `soulpack_select` 工具加载了角色包 |
-| 记忆未保存 | 检查 `~/.openclaw/soulpack-data/` 目录是否可写 |
-| 没有语音 | 需要在 `openclaw.json` 中启用 TTS（见 Step 5） |
-
----
-
-## 能力降级说明
-
-Soul Pack 支持渐进式能力消费：
-
-| 宿主能力 | 效果 |
-|----------|------|
-| 仅文本 | 角色人格 + 记忆正常工作（最低要求） |
-| + TTS | 角色以指定声音说话 |
-| + 头像显示 | 角色头像显示在聊天界面 |
-| + 表情切换 | 根据情绪切换表情图片 |
-| + 3D/Live2D | 未来扩展（当前版本跳过） |
+| MCP 连接失败 | 确认 `npx tsx` 可用，路径正确 |
+| 人格未注入 | 调用 `soulpack_status` 检查是否有激活的 pack |
+| 记忆未保存 | 检查 `~/.soulpack/` 目录是否可写 |
+| URL 安装失败 | 确认网站的下载链接可访问，返回合法 JSON |

@@ -1,11 +1,11 @@
 /**
  * Soul Pack HTTP Routes — 供网站一键安装等外部客户端调用
  *
- * 路由（挂载在 /plugins/soulpack-reader/ 下）：
+ * 路由：
  *   POST /import    — 接收 pack JSON，保存到本地并可选激活
  *   GET  /list      — 返回已安装的 pack 列表
  *   POST /activate  — 切换当前激活的 pack
- *   GET  /ping      — 健康检查（供网站检测 OpenClaw 是否在线）
+ *   GET  /ping      — 健康检查（供网站检测 Soul Pack Reader 是否在线）
  *   POST /remove    — 删除已安装的 pack
  *   POST /record    — 外部系统推送对话记录（核心：独立于AI宿主的记忆采集）
  *   GET  /memory/status  — 记忆状态概览
@@ -142,8 +142,8 @@ export function createRouteHandlers(stateDir: string, getEngine?: () => MemoryEn
     const activePack = getCurrentPack();
     sendJson(res, 200, {
       status: "ok",
-      plugin: "soulpack-reader",
-      version: "0.1.0",
+      server: "soulpack-reader",
+      version: "0.3.0",
       activePack: activePack
         ? { packId: activePack.packId, name: activePack.name }
         : null,

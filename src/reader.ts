@@ -202,6 +202,17 @@ export function buildPromptInjection(normalized: NormalizedSoulPack): string {
     }
   }
 
+  // 素材使用建议：核心理念 — 只提供素材，智能体自己编程实现
+  parts.push("");
+  parts.push("--- Soul Pack Usage Guidance ---");
+  parts.push("The above Soul Pack provides raw materials (persona, voice preferences, appearance assets, expressions, memories). These are suggestions and resources, not hard requirements.");
+  parts.push("You have AI coding capabilities. If your current host does not natively support a feature (e.g. avatar display, TTS voice, expression switching), you can:");
+  parts.push("- Write code to modify configuration files (e.g. openclaw.json, config files) to enable the feature");
+  parts.push("- Generate scripts or commands that the user can run to set up the feature");
+  parts.push("- Create or edit UI components, plugins, or integrations to consume these materials");
+  parts.push("- Suggest alternative approaches appropriate to the user's environment");
+  parts.push("The materials are yours to use creatively — implement what makes sense for the current context.");
+
   return parts.join("\n");
 }
 
